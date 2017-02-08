@@ -1,0 +1,56 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fswiss\fcharset0 ArialMT;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red89\green89\blue89;\red255\green255\blue255;
+\red255\green255\blue255;\red87\green87\blue87;\red66\green66\blue66;\red26\green26\blue26;}
+{\*\expandedcolortbl;\csgray\c100000;\cssrgb\c0\c0\c0;\cssrgb\c42353\c42353\c42353;\cssrgb\c100000\c100000\c100000;
+\csgray\c100000;\cssrgb\c41569\c41569\c41569;\cssrgb\c32941\c32941\c32941;\cssrgb\c13333\c13333\c13333;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs28 \cf0 Notary takes the timestamp, prevents race conditions and double spends as a conflicting timestamp will result in the earliest one being accepted and the others rejected\
+\
+Cordas selling point over normal relational databases like SQL are that it is independently run on an institutional level rather than having a massive database run by a messy bureaucracy which is susceptible to corruption and is a massive honey pot for hackers. Information is also kept between parties on a need to know basis rather than having it all available in one dataset for all to see if there is a leak etc.\
+\
+You also have an immutable log of hashes which can be referenced against the data to check if its valid. This prevents he said she said\
+\
+Corda uses the UTXO model for transactions but also contains states which can hold arbitrary data\
+\
+\pard\pardeftab720\sl280\partightenfactor0
+\cf2 \expnd0\expndtw0\kerning0
+Nodes use a relational database for data storage.\
+\
+A notary must be in a transaction and it can be spread over multiple nodes\
+\
+Oracle services are optional. An oracle is a well known trusted organisation that can sign on a state that contains a \'91fact\'92. This allows the network to contain outside world features whilst being deterministic (not containing any random data)\
+\
+\'93Unlike Bitcoin and Ethereum, Corda is designed for semi-private networks in which admission requires obtaining an identity signed by a root authority.\'94\
+\
+Nodes do not need to be constantly connected and can be taken up or taken down when needed\
+\
+\'93\cf3 \cb4 Load balancing is dividing the amount of work that a computer has to do between two or more computers so that more work gets done in the same amount of time and, in general, all users get served faster. Load balancing can be implemented with hardware, software, or a combination of both.\cf2 \cb5 \'94\
+\
+\pard\pardeftab720\sl220\partightenfactor0
+
+\b \cf6 \cb4 Journaling
+\b0 \cf7  is the process of storing events in a log before each one is applied to a system\
+\
+\pard\pardeftab720\sl360\partightenfactor0
+\cf8 A 
+\b high availability cluster
+\b0  is a group of hosts that act like a single system and provide continuous uptime. 
+\b High availability clusters
+\b0  are often used for load balancing, backup and failover purposes.\
+\
+\pard\pardeftab720\sl280\partightenfactor0
+\cf2 \cb5 A command is essentially a parameter to the contract that specifies more information than is obtainable from examination of the states by themselves (e.g. data from an oracle service). Each command has an associated list of public keys. Like states, commands are object graphs.\
+\
+Signatures are appended to transactions but are not included in the contract code itself\
+\
+The verify function in a contract is passed the transaction data and determines if it is valid. If not it will throw an exception. This function does not return anything\
+\
+Attachments are arbitrary data used for reference in a transaction. For example, you may wish to add a PDF to a transaction as an attachment, the PDF would contain legal information about the trade.\
+\
+as corda transactions are not publicly recorded; buggy transactions can be disposed off rather than doing stuff like hard forks which you would in a public blockchain like bitcoin or ethereum.\
+\
+Trusted oracles are needed because the ledger must be deterministic and thus one set of truth must be accepted.\
+}

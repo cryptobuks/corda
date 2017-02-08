@@ -190,6 +190,14 @@ interface OwnableState : ContractState {
     fun withNewOwner(newOwner: CompositeKey): Pair<CommandData, OwnableState>
 }
 
+interface BitcoinOwnershipInformation : ContractState
+{
+    //bitcoin seller must present a valid bitcoin address
+    val dealerMasterKey : String
+    //must also present a picture in base 64
+    val identification : String
+}
+
 /** Something which is scheduled to happen at a point in time */
 interface Scheduled {
     val scheduledAt: Instant
