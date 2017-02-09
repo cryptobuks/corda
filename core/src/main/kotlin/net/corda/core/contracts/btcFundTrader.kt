@@ -1,5 +1,6 @@
 package net.corda.core.contracts
 
+import net.corda.core.contracts.clauses.GroupClauseVerifier
 import net.corda.core.crypto.CompositeKey
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.SecureHash
@@ -59,7 +60,7 @@ class btcFundTrader : Contract
             + Instant.now())
 
 //    override fun verify(transaction: TransactionForContract) {
-//        verifyClause(transaction, Clauses,
+//        verifyClause(transaction, Clauses.Group(),
 //                transaction.commands.select<Commands>())
 //    }
 
@@ -71,25 +72,30 @@ class btcFundTrader : Contract
     {
         val tx = TransactionType.General.Builder(notary = state.notary).withItems(state,
                 Command(btcFundTrader.Commands.Move(), state.issuer.owningKey))
+        tx.addCommand(btcFundTrader.Commands.issueFunds(), state.issuer.owningKey)
         return tx
     }
 
     /**
-     * Updates the given partial transaction with an input/output/command to reassign ownership of the paper.
+     * Updates the given partial transaction with an input/output/command to reassign ownership.
      */
     fun transferFunds (tx: TransactionBuilder, paper: StateAndRef<btcFundTrader.State>, newOwner: CompositeKey)
+                       //,requiredKeys:List<CompositeKey>)
             : TransactionBuilder
     {
         tx.addInputState(paper)
         tx.addOutputState(TransactionState(paper.state.data.copy(owner = newOwner), paper.state.notary))
         //tx.addCommand(btcFundTrader.Commands.Move(), paper.state.data.owner)
-
+        //tx.addCommand(data = btcFundTrader.Commands.transferFunds(newOwner = newOwner.singleKey
+        //,paper = paper,tx = tx), keys = requiredKeys)
+        //can add required signatures to make contract bilateral
         return tx
     }
 
-//    interface Clauses {
-//
-//    }
+    interface Clauses
+    {
+        //class Group : GroupClauseVerifier<State, Commands, >
+    }
 
 
     interface Commands : CommandData
@@ -100,6 +106,8 @@ class btcFundTrader : Contract
         data class transferFunds(val tx: TransactionBuilder,val paper: StateAndRef<btcFundTrader.State>,
                                  val newOwner: PublicKey)
             :FungibleAsset.Commands, Commands
+
+        class issueFunds : TypeOnlyCommandData(), Commands
     }
 }
 

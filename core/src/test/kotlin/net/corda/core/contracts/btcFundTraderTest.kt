@@ -61,6 +61,9 @@ class btcFundTraderTest {
 
             stx
         }
+//
+//        val requiredKeys:List<CompositeKey> = arrayListOf(owner.public.composite,
+//                notary.public.composite, BTCFUND.public.composite)
 
         val trade: SignedTransaction = run {
             val builder = TransactionType.General.Builder(notaryParty)
