@@ -1,6 +1,5 @@
 package net.corda.core.contracts
 
-import net.corda.core.contracts.clauses.GroupClauseVerifier
 import net.corda.core.crypto.CompositeKey
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.SecureHash

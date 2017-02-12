@@ -1,5 +1,6 @@
 package net.corda.core.contracts
 
+import net.corda.core.crypto.CompositeKey
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.composite
 import net.corda.core.crypto.generateKeyPair
@@ -61,9 +62,9 @@ class btcFundTraderTest {
 
             stx
         }
-//
-//        val requiredKeys:List<CompositeKey> = arrayListOf(owner.public.composite,
-//                notary.public.composite, BTCFUND.public.composite)
+
+        val requiredKeys:List<CompositeKey> = arrayListOf(owner.public.composite,
+                notary.public.composite, BTCFUND.public.composite)
 
         val trade: SignedTransaction = run {
             val builder = TransactionType.General.Builder(notaryParty)
