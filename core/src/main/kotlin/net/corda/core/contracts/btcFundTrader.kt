@@ -1,5 +1,6 @@
 package net.corda.core.contracts
 
+import net.corda.core.contracts.clauses.Clause
 import net.corda.core.crypto.CompositeKey
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.SecureHash
@@ -17,6 +18,12 @@ import java.time.Instant
 
 class btcFundTrader : Contract
 {
+
+    data class Terms(
+            val id : String,
+            val btcAddress : String
+    )
+
     data class State(
             val currencySymbol: String = "BTC",
             val currentPrice: Int,
@@ -91,9 +98,29 @@ class btcFundTrader : Contract
         return tx
     }
 
-    interface Clauses
-    {
-        //class Group : GroupClauseVerifier<State, Commands, >
+    interface Clauses {
+        //TODO : add to verify function
+        class Transfer : Clause<State, Commands, Issued<Terms>>() {
+
+            override val requiredCommands: Set<Class<out CommandData>>
+                get() = setOf(Commands.Move::class.java)
+
+            override fun verify(tx: TransactionForContract,
+                                inputs: List<State>,
+                                outputs: List<State>,
+                                commands: List<AuthenticatedObject<Commands>>,
+                                groupingKey: Issued<Terms>?): Set<Commands> {
+                val command = commands.requireSingleCommand<Commands.transferFunds>()
+                val input = inputs.single()
+                requireThat {
+                    "the transaction is signed by the owner of the CP" by (input.owner in command.signers)
+                    "the state is propagated" by (outputs.size == 1)
+                    "an ID is present" by (input.idImageURL != "")
+                    "a bitcoin address is provides" by (input.bitcoinAddress != "")
+                }
+                return setOf(command.value)
+            }
+        }
     }
 
 
