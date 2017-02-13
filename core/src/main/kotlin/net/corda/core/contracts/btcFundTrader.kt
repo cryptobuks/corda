@@ -1,6 +1,9 @@
 package net.corda.core.contracts
 
+import net.corda.core.contracts.clauses.AnyOf
 import net.corda.core.contracts.clauses.Clause
+import net.corda.core.contracts.clauses.GroupClauseVerifier
+import net.corda.core.contracts.clauses.verifyClause
 import net.corda.core.crypto.CompositeKey
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.SecureHash
@@ -13,7 +16,7 @@ import java.security.PublicKey
 import java.time.Instant
 
 /**
- * Created by sangalli on 23/01/2017, adapted from CommercialPaper.kt.
+ * Created by sangalli on 23/01/2017
  */
 
 class btcFundTrader : Contract
@@ -65,13 +68,8 @@ class btcFundTrader : Contract
     override val legalContractReference: SecureHash = SecureHash.sha256("BTCFUND trade commencing on: "
             + Instant.now())
 
-//    override fun verify(transaction: TransactionForContract) {
-//        verifyClause(transaction, Clauses.Group(),
-//                transaction.commands.select<Commands>())
-//    }
-
     override fun verify(tx: TransactionForContract) {
-        // Always accepts.
+        verifyClause(tx, clause = Clauses.Group(), commands = tx.commands.select<Commands>())
     }
 
     fun generateTransaction(state : State) : TransactionBuilder
@@ -91,15 +89,19 @@ class btcFundTrader : Contract
     {
         tx.addInputState(paper)
         tx.addOutputState(TransactionState(paper.state.data.copy(owner = newOwner), paper.state.notary))
-        //tx.addCommand(btcFundTrader.Commands.Move(), paper.state.data.owner)
-        //tx.addCommand(data = btcFundTrader.Commands.transferFunds(newOwner = newOwner.singleKey
-        //,paper = paper,tx = tx), keys = requiredKeys)
-        //can add required signatures to make contract bilateral
+        //tx.addCommand(btcFundTrader.Commands.transferFunds(tx = tx, paper = paper, newOwner = newOwner.singleKey))
         return tx
     }
 
     interface Clauses {
-        //TODO : add to verify function
+
+        class Group : GroupClauseVerifier<State, Commands, Issued<Terms>>(
+                AnyOf( Transfer() )) {
+            override fun groupStates(tx: TransactionForContract): List<TransactionForContract.InOutGroup<State, Issued<Terms>>> {
+                throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+            }
+        }
+
         class Transfer : Clause<State, Commands, Issued<Terms>>() {
 
             override val requiredCommands: Set<Class<out CommandData>>
