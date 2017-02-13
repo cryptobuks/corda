@@ -9,14 +9,22 @@ import net.corda.core.transactions.SignedTransaction
 import org.junit.Test
 import java.security.KeyPair
 import java.time.Instant
+import javax.ws.rs.POST
 
 
 /**
- * Created by sangalli on 23/01/2017.
+ * Created by James Sangalli on 23/01/2017.
  */
 class btcFundTraderTest {
 
     val testContract = btcFundTrader()
+
+    @POST
+    fun storeTxHashOnBlockchain(txHash: String)
+    {
+        //Fuel.post("https://tbc-opreturn.herokuapp.com/v2/saveTxHashInBlockchain/" + txHash)
+        //.response{ request, response, result -> }
+    }
 
     @Test
     fun getLegalContractReference()
@@ -59,6 +67,7 @@ class btcFundTraderTest {
             val stx = tx.toSignedTransaction(true)
 
             println(stx)
+            storeTxHashOnBlockchain(stx.toString())
 
             stx
         }

@@ -16,7 +16,7 @@ import java.security.PublicKey
 import java.time.Instant
 
 /**
- * Created by sangalli on 23/01/2017
+ * Created by James Sangalli on 23/01/2017
  */
 
 class btcFundTrader : Contract
@@ -84,7 +84,7 @@ class btcFundTrader : Contract
      * Updates the given partial transaction with an input/output/command to reassign ownership.
      */
     fun transferFunds (tx: TransactionBuilder, paper: StateAndRef<btcFundTrader.State>, newOwner: CompositeKey)
-                       //,requiredKeys:List<CompositeKey>)
+            //,requiredKeys:List<CompositeKey>)
             : TransactionBuilder
     {
         tx.addInputState(paper)
@@ -97,8 +97,9 @@ class btcFundTrader : Contract
 
         class Group : GroupClauseVerifier<State, Commands, Issued<Terms>>(
                 AnyOf( Transfer() )) {
-            override fun groupStates(tx: TransactionForContract): List<TransactionForContract.InOutGroup<State, Issued<Terms>>> {
-                throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+            override fun groupStates(tx: TransactionForContract): List<TransactionForContract.InOutGroup<State,
+                    Issued<Terms>>> {
+                throw UnsupportedOperationException("not implemented")
             }
         }
 
@@ -118,7 +119,8 @@ class btcFundTrader : Contract
                     "the transaction is signed by the owner of the CP" by (input.owner in command.signers)
                     "the state is propagated" by (outputs.size == 1)
                     "an ID is present" by (input.idImageURL != "")
-                    "a bitcoin address is provides" by (input.bitcoinAddress != "")
+                    "a bitcoin address is provided" by (input.bitcoinAddress.length == 34 ||
+                            input.bitcoinAddress.length == 33) //all bitcoin addresses are either 34 or 33 characters long
                 }
                 return setOf(command.value)
             }
@@ -138,8 +140,3 @@ class btcFundTrader : Contract
         class issueFunds : TypeOnlyCommandData(), Commands
     }
 }
-
-
-
-
-
