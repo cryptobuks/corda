@@ -9,8 +9,8 @@ import net.corda.core.transactions.SignedTransaction
 import org.junit.Test
 import java.security.KeyPair
 import java.time.Instant
-import javax.ws.rs.POST
-
+import com.github.kittinunf.fuel.Fuel
+import net.corda.core.serialization.serialize
 
 /**
  * Created by James Sangalli on 23/01/2017.
@@ -19,11 +19,15 @@ class btcFundTraderTest {
 
     val testContract = btcFundTrader()
 
-    @POST
     fun storeTxHashOnBlockchain(txHash: String)
     {
-        //Fuel.post("https://tbc-opreturn.herokuapp.com/v2/saveTxHashInBlockchain/" + txHash)
-        //.response{ request, response, result -> }
+        println("Hash to be stored on blockchain: " + txHash)
+        Fuel.post("https://op-return.herokuapp.com/v2/saveTxHashInBlockchain/" + txHash)
+        .response{ request, response, result ->
+            println("response: " + response)
+            println("result: " + result)
+            println("request: " + request)
+        }
     }
 
     @Test
@@ -67,7 +71,8 @@ class btcFundTraderTest {
             val stx = tx.toSignedTransaction(true)
 
             println(stx)
-            storeTxHashOnBlockchain(stx.toString())
+            val signedTxHash = stx.serialize().hash.toString()
+            storeTxHashOnBlockchain(signedTxHash) //stores signed transaction hash on bitcoin testnet OP_RETURN
 
             stx
         }
