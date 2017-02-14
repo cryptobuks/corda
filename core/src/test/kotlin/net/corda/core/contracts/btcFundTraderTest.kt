@@ -22,6 +22,7 @@ class btcFundTraderTest {
     fun storeTxHashOnBlockchain(txHash: String)
     {
         println("Hash to be stored on blockchain: " + txHash)
+        //view the transactions on: http://tbtc.blockr.io/address/info/mnoQEPQe1D7hy2mvByJZk7cQ2JCd64cawA
         Fuel.post("https://op-return.herokuapp.com/v2/saveTxHashInBlockchain/" + txHash)
         .response{ request, response, result ->
             println("response: " + response)
