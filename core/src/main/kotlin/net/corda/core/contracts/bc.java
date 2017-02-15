@@ -6,14 +6,21 @@ package net.corda.core.contracts;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.math.BigInteger;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.util.Date;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
+import org.bouncycastle.crypto.AsymmetricBlockCipher;
+import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.openpgp.PGPEncryptedData;
 import org.bouncycastle.openpgp.PGPKeyPair;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
@@ -28,12 +35,15 @@ import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.bc.BcPGPKeyPair;
+import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
+import sun.misc.BASE64Decoder;
 
 public class bc
 {
+    private static final String filePath = System.getProperty("user.dir") + "/files/";
+
     public static void main(String args[]) throws Exception
     {
-        String filePath = System.getProperty("user.dir") + "/files/";
         char pass[] = {'b', 'i', 't', 'c', 'o', 'i', 'n'};
         PGPKeyRingGenerator krgen = generateKeyRingGenerator ("corda@example.com", pass);
 
@@ -42,7 +52,6 @@ public class bc
         BufferedOutputStream pubout = new BufferedOutputStream(new FileOutputStream(filePath + "dummy.pkr"));
         pkr.encode(pubout);
         pubout.close();
-        System.out.println(pkr.getPublicKey().getEncoded());
 
         // Generate private key, dump to file.
         PGPSecretKeyRing skr = krgen.generateSecretKeyRing();
@@ -54,6 +63,41 @@ public class bc
     static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass) throws Exception
     {
         return generateKeyRingGenerator(id, pass, 0xc0);
+    }
+
+    private static String encryptData (String inputData, AsymmetricKeyParameter encryptionKey) throws Exception
+    {
+        String encryptedData = null;
+        Security.addProvider(new BouncyCastlePQCProvider());
+        BASE64Decoder b64 = new BASE64Decoder();
+        AsymmetricBlockCipher e = new RSAEngine();
+        e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
+
+        byte[] dataToBeEncrypted = inputData.getBytes();
+        e.init(true, encryptionKey);
+        byte[] hexEncodedCipher = e.processBlock(dataToBeEncrypted, 0, dataToBeEncrypted.length);
+
+        encryptedData = getHexString(hexEncodedCipher);
+
+        System.out.println("Here is the encrypted data: " + encryptedData);
+
+        return encryptedData;
+    }
+
+    public static String getHexString(byte[] b) throws Exception
+    {
+
+        String result = "";
+        for (int i=0; i < b.length; i++)
+        {
+            result += Integer.toString( ( b[i] & 0xff ) + 0x100, 16).substring( 1 );
+        }
+        return result;
+    }
+
+    static void decrypt()
+    {
+
     }
 
 
@@ -85,8 +129,7 @@ public class bc
 
         // Add signed metadata on the signature.
         // 1) Declare its purpose
-        signhashgen.setKeyFlags
-                (false, KeyFlags.SIGN_DATA|KeyFlags.CERTIFY_OTHER);
+        signhashgen.setKeyFlags(false, KeyFlags.SIGN_DATA|KeyFlags.CERTIFY_OTHER);
         // 2) Set preferences for secondary crypto algorithms to use
         //    when sending messages to this key.
         signhashgen.setPreferredSymmetricAlgorithms
@@ -145,6 +188,9 @@ public class bc
         // Add our encryption subkey, together with its signature.
         keyRingGen.addSubKey
                 (rsakp_enc, enchashgen.generate(), null);
+
+        encryptData("hello mate!" , kpg.generateKeyPair().getPublic());
+
         return keyRingGen;
     }
 
