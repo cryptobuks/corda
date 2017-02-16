@@ -1,6 +1,5 @@
 package net.corda.core.contracts
 
-import net.corda.core.crypto.CompositeKey
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.composite
 import net.corda.core.crypto.generateKeyPair
@@ -10,7 +9,12 @@ import org.junit.Test
 import java.security.KeyPair
 import java.time.Instant
 import com.github.kittinunf.fuel.Fuel
+import com.github.kittinunf.fuel.httpGet
+import com.github.kittinunf.fuel.httpPost
+import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.getAs
 import net.corda.core.serialization.serialize
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.data
 
 /**
  * Created by James Sangalli on 23/01/2017.
@@ -23,12 +27,20 @@ class btcFundTraderTest {
     {
         println("Hash to be stored on blockchain: " + txHash)
         //view the transactions on: http://tbtc.blockr.io/address/info/mnoQEPQe1D7hy2mvByJZk7cQ2JCd64cawA
-        Fuel.post("https://op-return.herokuapp.com/v2/saveTxHashInBlockchain/" + txHash)
-        .response{ request, response, result ->
-            println("response: " + response)
-            println("result: " + result)
-            println("request: " + request)
+        val query = "https://op-return.herokuapp.com/v2/saveTxHashInBlockchain/" + txHash
+
+        query.httpPost().responseString { request, response, result ->
+            //do something with response
+            when (result) {
+                is Result.Failure -> {
+                    println("failed to store tx has on blockchain")
+                }
+                is Result.Success -> {
+                    println("tx hash stored on blockchain")
+                }
+            }
         }
+        
     }
 
     @Test
@@ -78,8 +90,8 @@ class btcFundTraderTest {
             stx
         }
 
-        val requiredKeys:List<CompositeKey> = arrayListOf(owner.public.composite,
-                notary.public.composite, BTCFUND.public.composite)
+//        val requiredKeys:List<CompositeKey> = arrayListOf(owner.public.composite,
+//                notary.public.composite, BTCFUND.public.composite)
 
         val trade: SignedTransaction = run {
             val builder = TransactionType.General.Builder(notaryParty)
