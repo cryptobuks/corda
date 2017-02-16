@@ -3,14 +3,6 @@ package net.corda.core.contracts;
 /**
  * Created by sangalli on 15/2/17.
  */
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.math.BigInteger;
-import java.security.KeyPair;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.util.Date;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
@@ -20,15 +12,7 @@ import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.openpgp.PGPEncryptedData;
-import org.bouncycastle.openpgp.PGPKeyPair;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.bouncycastle.openpgp.PGPKeyRingGenerator;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPSecretKeyRing;
-import org.bouncycastle.openpgp.PGPSignature;
-import org.bouncycastle.openpgp.PGPSignatureSubpacketGenerator;
+import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.operator.PBESecretKeyEncryptor;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyEncryptorBuilder;
@@ -36,11 +20,18 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.bc.BcPGPKeyPair;
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
-import sun.misc.BASE64Decoder;
 
-public class bc
-{
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.util.Date;
+
+public class bc {
+
     private static final String filePath = System.getProperty("user.dir") + "/files/";
+    private static PGPKeyPair mCurrentPGPKey;
 
     public static void main(String args[]) throws Exception
     {
@@ -55,21 +46,21 @@ public class bc
 
         // Generate private key, dump to file.
         PGPSecretKeyRing skr = krgen.generateSecretKeyRing();
+        System.out.println("this is a signing key: " + skr.getSecretKey().isSigningKey());
         BufferedOutputStream secout = new BufferedOutputStream (new FileOutputStream(filePath + "dummy.skr"));
         skr.encode(secout);
         secout.close();
     }
 
-    static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass) throws Exception
+    private static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass) throws Exception
     {
         return generateKeyRingGenerator(id, pass, 0xc0);
     }
 
     private static String encryptData (String inputData, AsymmetricKeyParameter encryptionKey) throws Exception
     {
-        String encryptedData = null;
+        String encryptedData;
         Security.addProvider(new BouncyCastlePQCProvider());
-        BASE64Decoder b64 = new BASE64Decoder();
         AsymmetricBlockCipher e = new RSAEngine();
         e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
 
@@ -84,7 +75,15 @@ public class bc
         return encryptedData;
     }
 
-    public static String getHexString(byte[] b) throws Exception
+//    private static String decryptData (String encryptedData, AsymmetricKeyParameter decryptionKey)
+//            throws Exception
+//    {
+//        Security.addProvider(new BouncyCastlePQCProvider());
+//        AsymmetricBlockCipher e = new RSAEngine();
+//
+//    }
+
+    private static String getHexString(byte[] b) throws Exception
     {
 
         String result = "";
@@ -95,13 +94,7 @@ public class bc
         return result;
     }
 
-    static void decrypt()
-    {
-
-    }
-
-
-    static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass, int s2kcount) throws Exception
+    private static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass, int s2kcount) throws Exception
     {
         // This object generates individual key-pairs.
         RSAKeyPairGenerator  kpg = new RSAKeyPairGenerator();
@@ -109,19 +102,20 @@ public class bc
         // Boilerplate RSA parameters, no need to change anything
         // except for the RSA key-size (2048). You can use whatever
         // key-size makes sense for you -- 4096, etc.
-        kpg.init
-                (new RSAKeyGenerationParameters
-                        (BigInteger.valueOf(0x10001),
+        kpg.init(new RSAKeyGenerationParameters(BigInteger.valueOf(0x10001),
                                 new SecureRandom(), 2048, 12));
 
         // First create the master (signing) key with the generator.
-        PGPKeyPair rsakp_sign =
-                new BcPGPKeyPair
-                        (PGPPublicKey.RSA_SIGN, kpg.generateKeyPair(), new Date());
+        PGPKeyPair PGPMasterKeyPair = new BcPGPKeyPair(PGPPublicKey.RSA_SIGN,
+                kpg.generateKeyPair(), new Date());
+
         // Then an encryption subkey.
-        PGPKeyPair rsakp_enc =
-                new BcPGPKeyPair
+        PGPKeyPair encryptionSubKey = new BcPGPKeyPair
                         (PGPPublicKey.RSA_ENCRYPT, kpg.generateKeyPair(), new Date());
+
+        mCurrentPGPKey = encryptionSubKey;
+
+        System.out.println("is this an encryption key? " + encryptionSubKey.getPublicKey().isEncryptionKey());
 
         // Add a self-signature on the id
         PGPSignatureSubpacketGenerator signhashgen =
@@ -176,18 +170,15 @@ public class bc
         // Finally, create the keyring itself. The constructor
         // takes parameters that allow it to generate the self
         // signature.
-        PGPKeyRingGenerator keyRingGen =
-                new PGPKeyRingGenerator
-                        (PGPSignature.POSITIVE_CERTIFICATION, rsakp_sign,
-                                id, sha1Calc, signhashgen.generate(), null,
+        PGPKeyRingGenerator keyRingGen = new PGPKeyRingGenerator (PGPSignature.POSITIVE_CERTIFICATION,
+                PGPMasterKeyPair, id, sha1Calc, signhashgen.generate(), null,
                                 new BcPGPContentSignerBuilder
-                                        (rsakp_sign.getPublicKey().getAlgorithm(),
+                                        (PGPMasterKeyPair.getPublicKey().getAlgorithm(),
                                                 HashAlgorithmTags.SHA1),
                                 pske);
 
         // Add our encryption subkey, together with its signature.
-        keyRingGen.addSubKey
-                (rsakp_enc, enchashgen.generate(), null);
+        keyRingGen.addSubKey(encryptionSubKey, enchashgen.generate(), null);
 
         encryptData("hello mate!" , kpg.generateKeyPair().getPublic());
 
