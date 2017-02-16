@@ -65,68 +65,6 @@ public class bc {
         return generateKeyRingGenerator(id, pass, 0xc0);
     }
 
-    public static String encryptData (String inputData, AsymmetricKeyParameter encryptionKey) throws Exception
-    {
-        String encryptedData;
-        Security.addProvider(new BouncyCastlePQCProvider());
-        AsymmetricBlockCipher e = new RSAEngine();
-        e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
-
-        byte[] dataToBeEncrypted = inputData.getBytes();
-        e.init(true, encryptionKey);
-        byte[] hexEncodedCipher = e.processBlock(dataToBeEncrypted, 0, dataToBeEncrypted.length);
-
-        encryptedData = getHexString(hexEncodedCipher);
-
-        System.out.println("Here is the encrypted data: " + encryptedData);
-
-        return encryptedData;
-    }
-
-    public static String Decrypt(String encrypted, AsymmetricKeyParameter privateKey) throws InvalidCipherTextException {
-    //	Source: http://www.mysamplecode.com/2011/08/java-rsa-decrypt-string-using-bouncy.html
-
-        Security.addProvider(new BouncyCastleProvider());
-
-        AsymmetricBlockCipher engine = new RSAEngine();
-        engine.init(false, privateKey); //false for decryption
-
-        byte[] encryptedBytes = encrypted.getBytes();
-        byte[] hexEncodedCipher = engine.processBlock(encryptedBytes, 0, encryptedBytes.length);
-
-        return new String (hexEncodedCipher);
-    }
-
-//    private static String decryptData (String encryptedData, AsymmetricKeyParameter decryptionKey) throws Exception
-//    {
-//        String decryptedData;
-//
-//        Security.addProvider(new BouncyCastlePQCProvider());
-//        AsymmetricBlockCipher e = new RSAEngine();
-//        e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
-//        e.init(false, decryptionKey);
-//
-//        byte[] dataToBeDecrypted = encryptedData.getBytes();
-//        byte[] hexEncodedCipher = e.processBlock(dataToBeDecrypted, 0, dataToBeDecrypted.length);
-//
-//        decryptedData = getHexString(hexEncodedCipher);
-//
-//        System.out.println("Here is the decrypted data: " + decryptedData);
-//
-//        return decryptedData;
-//    }
-
-    private static String getHexString(byte[] b) throws Exception
-    {
-
-        String result = "";
-        for (int i=0; i < b.length; i++)
-        {
-            result += Integer.toString( ( b[i] & 0xff ) + 0x100, 16).substring( 1 );
-        }
-        return result;
-    }
-
     private static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass, int s2kcount) throws Exception
     {
         // This object generates individual key-pairs.
@@ -151,8 +89,7 @@ public class bc {
         System.out.println("is this an encryption key? " + encryptionSubKey.getPublicKey().isEncryptionKey());
 
         // Add a self-signature on the id
-        PGPSignatureSubpacketGenerator signhashgen =
-                new PGPSignatureSubpacketGenerator();
+        PGPSignatureSubpacketGenerator signhashgen = new PGPSignatureSubpacketGenerator();
 
         // Add signed metadata on the signature.
         // 1) Declare its purpose
@@ -213,11 +150,11 @@ public class bc {
         // Add our encryption subkey, together with its signature.
         keyRingGen.addSubKey(encryptionSubKey, enchashgen.generate(), null);
 
+        //test RSA encryption and decryption with KeyPair
         AsymmetricCipherKeyPair pair = kpg.generateKeyPair();
-
-        String encryptedData = encryptData("hello mate!" , pair.getPublic());
-        String decrypted = Decrypt(encryptedData, pair.getPrivate());
-        System.out.println(decrypted);
+        String encryptedData = rsa.Encrypt("hello mate!".getBytes() , pair.getPublic());
+        String decrypted = rsa.Decrypt(encryptedData, pair.getPrivate());
+        System.out.println("this is the decrypted Message: " + decrypted);
 
         return keyRingGen;
     }
