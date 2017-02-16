@@ -1,4 +1,4 @@
-package net.corda.core.contracts;
+package net.corda.core.crypto;
 
 /**
  * Created by sangalli on 15/2/17.
@@ -28,9 +28,13 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Date;
 
+
 public class bc {
 
     private static final String filePath = System.getProperty("user.dir") + "/files/";
+    private static final String pathToPublicKey = filePath + "dummy.pkr";
+    private static final String pathToPrivateKey = filePath + "dummy.skr";
+
     private static PGPKeyPair mCurrentPGPKey;
 
     public static void main(String args[]) throws Exception
@@ -52,12 +56,13 @@ public class bc {
         secout.close();
     }
 
+
     private static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass) throws Exception
     {
         return generateKeyRingGenerator(id, pass, 0xc0);
     }
 
-    private static String encryptData (String inputData, AsymmetricKeyParameter encryptionKey) throws Exception
+    public static String encryptData (String inputData, AsymmetricKeyParameter encryptionKey) throws Exception
     {
         String encryptedData;
         Security.addProvider(new BouncyCastlePQCProvider());
@@ -75,13 +80,24 @@ public class bc {
         return encryptedData;
     }
 
-//    private static String decryptData (String encryptedData, AsymmetricKeyParameter decryptionKey)
-//            throws Exception
-//    {
-//        Security.addProvider(new BouncyCastlePQCProvider());
-//        AsymmetricBlockCipher e = new RSAEngine();
-//
-//    }
+    private static String decryptData (String encryptedData, AsymmetricKeyParameter decryptionKey) throws Exception
+    {
+        String decryptedData;
+
+        Security.addProvider(new BouncyCastlePQCProvider());
+        AsymmetricBlockCipher e = new RSAEngine();
+        e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
+        e.init(false, decryptionKey);
+
+        byte[] dataToBeDecrypted = encryptedData.getBytes();
+        byte[] hexEncodedCipher = e.processBlock(dataToBeDecrypted, 0, dataToBeDecrypted.length);
+
+        decryptedData = getHexString(hexEncodedCipher);
+
+        System.out.println("Here is the decrypted data: " + decryptedData);
+
+        return decryptedData;
+    }
 
     private static String getHexString(byte[] b) throws Exception
     {
@@ -180,7 +196,8 @@ public class bc {
         // Add our encryption subkey, together with its signature.
         keyRingGen.addSubKey(encryptionSubKey, enchashgen.generate(), null);
 
-        encryptData("hello mate!" , kpg.generateKeyPair().getPublic());
+        String encryptedData = encryptData("hello mate!" , kpg.generateKeyPair().getPublic());
+        decryptData(encryptedData, kpg.generateKeyPair().getPrivate());
 
         return keyRingGen;
     }
