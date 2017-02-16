@@ -8,10 +8,13 @@ import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.operator.PBESecretKeyEncryptor;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculator;
@@ -80,24 +83,38 @@ public class bc {
         return encryptedData;
     }
 
-    private static String decryptData (String encryptedData, AsymmetricKeyParameter decryptionKey) throws Exception
-    {
-        String decryptedData;
+    public static String Decrypt(String encrypted, AsymmetricKeyParameter privateKey) throws InvalidCipherTextException {
+    //	Source: http://www.mysamplecode.com/2011/08/java-rsa-decrypt-string-using-bouncy.html
 
-        Security.addProvider(new BouncyCastlePQCProvider());
-        AsymmetricBlockCipher e = new RSAEngine();
-        e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
-        e.init(false, decryptionKey);
+        Security.addProvider(new BouncyCastleProvider());
 
-        byte[] dataToBeDecrypted = encryptedData.getBytes();
-        byte[] hexEncodedCipher = e.processBlock(dataToBeDecrypted, 0, dataToBeDecrypted.length);
+        AsymmetricBlockCipher engine = new RSAEngine();
+        engine.init(false, privateKey); //false for decryption
 
-        decryptedData = getHexString(hexEncodedCipher);
+        byte[] encryptedBytes = encrypted.getBytes();
+        byte[] hexEncodedCipher = engine.processBlock(encryptedBytes, 0, encryptedBytes.length);
 
-        System.out.println("Here is the decrypted data: " + decryptedData);
-
-        return decryptedData;
+        return new String (hexEncodedCipher);
     }
+
+//    private static String decryptData (String encryptedData, AsymmetricKeyParameter decryptionKey) throws Exception
+//    {
+//        String decryptedData;
+//
+//        Security.addProvider(new BouncyCastlePQCProvider());
+//        AsymmetricBlockCipher e = new RSAEngine();
+//        e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
+//        e.init(false, decryptionKey);
+//
+//        byte[] dataToBeDecrypted = encryptedData.getBytes();
+//        byte[] hexEncodedCipher = e.processBlock(dataToBeDecrypted, 0, dataToBeDecrypted.length);
+//
+//        decryptedData = getHexString(hexEncodedCipher);
+//
+//        System.out.println("Here is the decrypted data: " + decryptedData);
+//
+//        return decryptedData;
+//    }
 
     private static String getHexString(byte[] b) throws Exception
     {
@@ -196,8 +213,11 @@ public class bc {
         // Add our encryption subkey, together with its signature.
         keyRingGen.addSubKey(encryptionSubKey, enchashgen.generate(), null);
 
-        String encryptedData = encryptData("hello mate!" , kpg.generateKeyPair().getPublic());
-        decryptData(encryptedData, kpg.generateKeyPair().getPrivate());
+        AsymmetricCipherKeyPair pair = kpg.generateKeyPair();
+
+        String encryptedData = encryptData("hello mate!" , pair.getPublic());
+        String decrypted = Decrypt(encryptedData, pair.getPrivate());
+        System.out.println(decrypted);
 
         return keyRingGen;
     }
