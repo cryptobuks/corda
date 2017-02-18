@@ -4,17 +4,12 @@ import net.corda.core.crypto.Party
 import net.corda.core.crypto.composite
 import net.corda.core.crypto.generateKeyPair
 import net.corda.core.hours
+import net.corda.core.serialization.serialize
 import net.corda.core.transactions.SignedTransaction
+import net.corda.core.utilities.OpReturnApi
 import org.junit.Test
 import java.security.KeyPair
 import java.time.Instant
-import com.github.kittinunf.fuel.Fuel
-import com.github.kittinunf.fuel.httpGet
-import com.github.kittinunf.fuel.httpPost
-import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.getAs
-import net.corda.core.serialization.serialize
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.data
 
 /**
  * Created by James Sangalli on 23/01/2017.
@@ -22,26 +17,6 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.data
 class btcFundTraderTest {
 
     val testContract = btcFundTrader()
-
-    fun storeTxHashOnBlockchain(txHash: String)
-    {
-        println("Hash to be stored on blockchain: " + txHash)
-        //view the transactions on: http://tbtc.blockr.io/address/info/mnoQEPQe1D7hy2mvByJZk7cQ2JCd64cawA
-        val query = "https://op-return.herokuapp.com/v2/saveTxHashInBlockchain/" + txHash
-
-        query.httpPost().responseString { request, response, result ->
-            //do something with response
-            when (result) {
-                is Result.Failure -> {
-                    println("failed to store tx has on blockchain")
-                }
-                is Result.Success -> {
-                    println("tx hash stored on blockchain")
-                }
-            }
-        }
-        
-    }
 
     @Test
     fun getLegalContractReference()
@@ -85,13 +60,12 @@ class btcFundTraderTest {
 
             println(stx)
             val signedTxHash = stx.serialize().hash.toString()
-            storeTxHashOnBlockchain(signedTxHash) //stores signed transaction hash on bitcoin testnet OP_RETURN
+            //stores signed transaction hash on bitcoin testnet OP_RETURN
+            //Useful for high priority transactions
+            OpReturnApi.storeTxHashOnBlockchain(signedTxHash)
 
             stx
         }
-
-//        val requiredKeys:List<CompositeKey> = arrayListOf(owner.public.composite,
-//                notary.public.composite, BTCFUND.public.composite)
 
         val trade: SignedTransaction = run {
             val builder = TransactionType.General.Builder(notaryParty)
@@ -100,6 +74,7 @@ class btcFundTraderTest {
             builder.signWith(owner)
             builder.signWith(notary)
             val tx = builder.toSignedTransaction(true)
+            OpReturnApi.storeTxHashOnBlockchain(tx.serialize().hash.toString())
             tx
         }
 
