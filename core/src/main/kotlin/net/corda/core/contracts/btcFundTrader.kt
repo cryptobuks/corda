@@ -116,9 +116,9 @@ class btcFundTrader : Contract
                 val command = commands.requireSingleCommand<Commands.transferFunds>()
                 val input = inputs.single()
                 requireThat {
-                    "the transaction is signed by the owner of the CP" by (input.owner in command.signers)
+                    "the transaction is signed by the owner" by (input.owner in command.signers)
                     "the state is propagated" by (outputs.size == 1)
-                    "an ID is present" by (input.idImageURL != "")
+                    "an ID is present" by (input.idImageURL != "" || input.idImageURL != null)
                     "a bitcoin address is provided" by (input.bitcoinAddress.length == 34 ||
                             input.bitcoinAddress.length == 33) //all bitcoin addresses are either 34 or 33 characters long
                 }
