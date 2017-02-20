@@ -7,14 +7,9 @@ import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
-import org.bouncycastle.crypto.AsymmetricBlockCipher;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.operator.PBESecretKeyEncryptor;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculator;
@@ -22,13 +17,10 @@ import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyEncryptorBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.bc.BcPGPKeyPair;
-import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
-
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.util.Date;
 
 
@@ -53,6 +45,7 @@ public class bc {
 
         // Generate private key, dump to file.
         PGPSecretKeyRing skr = krgen.generateSecretKeyRing();
+
         System.out.println("this is a signing key: " + skr.getSecretKey().isSigningKey());
         BufferedOutputStream secout = new BufferedOutputStream (new FileOutputStream(filePath + "dummy.skr"));
         skr.encode(secout);
@@ -74,7 +67,7 @@ public class bc {
         // except for the RSA key-size (2048). You can use whatever
         // key-size makes sense for you -- 4096, etc.
         kpg.init(new RSAKeyGenerationParameters(BigInteger.valueOf(0x10001),
-                                new SecureRandom(), 2048, 12));
+                                new SecureRandom(), 4096, 12));
 
         // First create the master (signing) key with the generator.
         PGPKeyPair PGPMasterKeyPair = new BcPGPKeyPair(PGPPublicKey.RSA_SIGN,
@@ -152,7 +145,9 @@ public class bc {
 
         //test RSA encryption and decryption with KeyPair
         AsymmetricCipherKeyPair pair = kpg.generateKeyPair();
+
         String encryptedData = rsa.Encrypt("hello mate!".getBytes() , pair.getPublic());
+        System.out.println("this is the encrypted message: " + encryptedData);
         String decrypted = rsa.Decrypt(encryptedData, pair.getPrivate());
         System.out.println("this is the decrypted Message: " + decrypted);
 
