@@ -18,6 +18,7 @@ import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 import java.util.jar.JarInputStream
+import kotlin.reflect.KClass
 
 /** Implemented by anything that can be named by a secure hash value (e.g. transactions, attachments). */
 interface NamedByHash {
@@ -465,7 +466,7 @@ interface Contract {
  * @param NewState the upgraded contract state.
  */
 interface UpgradedContract<in OldState : ContractState, out NewState : ContractState> : Contract {
-    val legacyContract: Class<out Contract>
+    val legacyContract: KClass<btcFundTrader>
     /**
      * Upgrade contract's state object to a new state object.
      *
