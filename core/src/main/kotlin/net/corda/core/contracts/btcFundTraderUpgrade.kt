@@ -31,9 +31,10 @@ class btcFundTraderUpgrade : UpgradedContract<btcFundTrader.State, btcFundTrader
             "/about/overview" + " trade commencing on: "
             + Instant.now())
 
-    override fun upgrade(state: btcFundTrader.State): State {
-        //return btcFundTraderUpgrade.State("GBTC", 2400, 1, )
-        throw UnsupportedOperationException("not implemented")
+    override fun upgrade(state: btcFundTrader.State): State
+    {
+        return btcFundTraderUpgrade.State(state.currencySymbol, state.currentPrice, state.amount,state.notary,
+                state.issuer, state.owner, state.bitcoinAddress, state.idImageURL)
     }
 
     data class State(
