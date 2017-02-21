@@ -191,7 +191,10 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
             log.warn("Corda node is running in dev mode.")
             configuration.configureWithDevSSLCertificate()
         }
-        require(hasSSLCertificates()) { "SSL certificates not found." }
+        require(hasSSLCertificates()) { "Identity certificate not found. " +
+                "Please either copy your existing identity key and certificate from another node, " +
+                "or if you don't have one yet, fill out the config file and run corda.jar --initial-registration. " +
+                "Read more at: https://docs.corda.net/permissioning.html" }
 
         log.info("Node starting up ...")
 
@@ -203,7 +206,7 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
             netMapCache = InMemoryNetworkMapCache()
             net = makeMessagingService()
             schemas = makeSchemaService()
-            vault = makeVaultService()
+            vault = makeVaultService(configuration.dataSourceProperties)
 
             info = makeInfo()
             identity = makeIdentityService()
@@ -452,7 +455,7 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
     }
 
     // TODO: sort out ordering of open & protected modifiers of functions in this class.
-    protected open fun makeVaultService(): VaultService = NodeVaultService(services)
+    protected open fun makeVaultService(dataSourceProperties: Properties): VaultService = NodeVaultService(services, dataSourceProperties)
 
     protected open fun makeSchemaService(): SchemaService = NodeSchemaService()
 
