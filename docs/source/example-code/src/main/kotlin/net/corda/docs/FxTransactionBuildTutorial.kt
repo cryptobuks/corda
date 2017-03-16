@@ -14,6 +14,7 @@ import net.corda.core.flows.FlowLogic
 import net.corda.core.node.PluginServiceHub
 import net.corda.core.node.ServiceHub
 import net.corda.core.node.services.unconsumedStates
+import net.corda.core.serialization.CordaSerializable
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.unwrap
 import net.corda.flows.FinalityFlow
@@ -23,16 +24,18 @@ import java.util.*
 object FxTransactionDemoTutorial {
     // Would normally be called by custom service init in a CorDapp
     fun registerFxProtocols(pluginHub: PluginServiceHub) {
-        pluginHub.registerFlowInitiator(ForeignExchangeFlow::class, ::ForeignExchangeRemoteFlow)
+        pluginHub.registerFlowInitiator(ForeignExchangeFlow::class.java, ::ForeignExchangeRemoteFlow)
     }
 }
 
+@CordaSerializable
 private data class FxRequest(val tradeId: String,
                              val amount: Amount<Issued<Currency>>,
                              val owner: Party,
                              val counterparty: Party,
                              val notary: Party? = null)
 
+@CordaSerializable
 private data class FxResponse(val inputs: List<StateAndRef<Cash.State>>,
                               val outputs: List<Cash.State>)
 

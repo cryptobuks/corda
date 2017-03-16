@@ -3,6 +3,7 @@ package net.corda.core.node.services
 import com.google.common.util.concurrent.ListenableFuture
 import net.corda.core.contracts.*
 import net.corda.core.crypto.*
+import net.corda.core.serialization.CordaSerializable
 import net.corda.core.toFuture
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.transactions.WireTransaction
@@ -36,6 +37,7 @@ val DEFAULT_SESSION_ID = 0L
  *   Active means they haven't been consumed yet (or we don't know about it).
  *   Relevant means they contain at least one of our pubkeys.
  */
+@CordaSerializable
 class Vault<out T : ContractState>(val states: Iterable<StateAndRef<T>>) {
 
     /**
@@ -46,6 +48,7 @@ class Vault<out T : ContractState>(val states: Iterable<StateAndRef<T>>) {
      * If the vault observes multiple transactions simultaneously, where some transactions consume the outputs of some of the
      * other transactions observed, then the changes are observed "net" of those.
      */
+    @CordaSerializable
     data class Update(val consumed: Set<StateAndRef<ContractState>>, val produced: Set<StateAndRef<ContractState>>) {
         /** Checks whether the update contains a state of the specified type. */
         inline fun <reified T : ContractState> containsType() = consumed.any { it.state.data is T } || produced.any { it.state.data is T }
@@ -200,15 +203,15 @@ interface VaultService {
                       onlyFromParties: Set<AbstractParty>? = null): Pair<TransactionBuilder, List<CompositeKey>>
 
     /**
-     * Return [ContractState]s of a given [Contract] type and list of [Vault.StateStatus]
+     * Return [ContractState]s of a given [Contract] type and [Iterable] of [Vault.StateStatus].
      */
-    fun <T : ContractState> states(clazzes: Set<Class<T>>, statuses: EnumSet<Vault.StateStatus>): List<StateAndRef<T>>
+    fun <T : ContractState> states(clazzes: Set<Class<T>>, statuses: EnumSet<Vault.StateStatus>): Iterable<StateAndRef<T>>
 }
 
-inline fun <reified T: ContractState> VaultService.unconsumedStates(): List<StateAndRef<T>> =
+inline fun <reified T: ContractState> VaultService.unconsumedStates(): Iterable<StateAndRef<T>> =
         states(setOf(T::class.java), EnumSet.of(Vault.StateStatus.UNCONSUMED))
 
-inline fun <reified T: ContractState> VaultService.consumedStates(): List<StateAndRef<T>> =
+inline fun <reified T: ContractState> VaultService.consumedStates(): Iterable<StateAndRef<T>> =
         states(setOf(T::class.java), EnumSet.of(Vault.StateStatus.CONSUMED))
 
 /** Returns the [linearState] heads only when the type of the state would be considered an 'instanceof' the given type. */
@@ -261,21 +264,23 @@ interface FileUploader {
     fun accepts(type: String): Boolean
 }
 
+interface AttachmentsStorageService {
+    /** Provides access to storage of arbitrary JAR files (which may contain only data, no code). */
+    val attachments: AttachmentStorage
+}
+
 /**
  * A sketch of an interface to a simple key/value storage system. Intended for persistence of simple blobs like
  * transactions, serialised flow state machines and so on. Again, this isn't intended to imply lack of SQL or
  * anything like that, this interface is only big enough to support the prototyping work.
  */
-interface StorageService {
+interface StorageService : AttachmentsStorageService {
     /**
      * A map of hash->tx where tx has been signature/contract validated and the states are known to be correct.
      * The signatures aren't technically needed after that point, but we keep them around so that we can relay
      * the transaction data to other nodes that need it.
      */
     val validatedTransactions: ReadOnlyTransactionStorage
-
-    /** Provides access to storage of arbitrary JAR files (which may contain only data, no code). */
-    val attachments: AttachmentStorage
 
     @Suppress("DEPRECATION")
     @Deprecated("This service will be removed in a future milestone")

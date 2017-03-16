@@ -5,7 +5,7 @@ import com.esotericsoftware.kryo.KryoException
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import java.util.*
+import com.esotericsoftware.kryo.pool.KryoPool
 
 /**
  * The interfaces and classes in this file allow large, singleton style classes to
@@ -22,6 +22,7 @@ import java.util.*
  *
  * This models a similar pattern to the readReplace/writeReplace methods in Java serialization.
  */
+@CordaSerializable
 interface SerializeAsToken {
     fun toToken(context: SerializeAsTokenContext): SerializationToken
 }
@@ -35,8 +36,6 @@ interface SerializationToken {
 
 /**
  * A Kryo serializer for [SerializeAsToken] implementations.
- *
- * This is registered in [createKryo].
  */
 class SerializeAsTokenSerializer<T : SerializeAsToken> : Serializer<T>() {
     override fun write(kryo: Kryo, output: Output, obj: T) {
@@ -75,8 +74,8 @@ class SerializeAsTokenSerializer<T : SerializeAsToken> : Serializer<T>() {
  * Then it is a case of using the companion object methods on [SerializeAsTokenSerializer] to set and clear context as necessary
  * on the Kryo instance when serializing to enable/disable tokenization.
  */
-class SerializeAsTokenContext(toBeTokenized: Any, kryo: Kryo = createKryo()) {
-    internal val tokenToTokenized = HashMap<SerializationToken, SerializeAsToken>()
+class SerializeAsTokenContext(toBeTokenized: Any, kryoPool: KryoPool) {
+    internal val tokenToTokenized = mutableMapOf<SerializationToken, SerializeAsToken>()
     internal var readOnly = false
 
     init {
@@ -89,9 +88,11 @@ class SerializeAsTokenContext(toBeTokenized: Any, kryo: Kryo = createKryo()) {
          * accidental registrations from occuring as these could not be deserialized in a deserialization-first
          * scenario if they are not part of this iniital context construction serialization.
          */
-        SerializeAsTokenSerializer.setContext(kryo, this)
-        toBeTokenized.serialize(kryo)
-        SerializeAsTokenSerializer.clearContext(kryo)
+        kryoPool.run { kryo ->
+            SerializeAsTokenSerializer.setContext(kryo, this)
+            toBeTokenized.serialize(kryo)
+            SerializeAsTokenSerializer.clearContext(kryo)
+        }
         readOnly = true
     }
 }
@@ -100,6 +101,7 @@ class SerializeAsTokenContext(toBeTokenized: Any, kryo: Kryo = createKryo()) {
  * A class representing a [SerializationToken] for some object that is not serializable but can be looked up
  * (when deserialized) via just the class name.
  */
+@CordaSerializable
 data class SingletonSerializationToken private constructor(private val className: String) : SerializationToken {
 
     constructor(toBeTokenized: SerializeAsToken) : this(toBeTokenized.javaClass.name)

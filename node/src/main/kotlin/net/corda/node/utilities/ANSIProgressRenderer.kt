@@ -3,7 +3,7 @@ package net.corda.node.utilities
 import net.corda.core.utilities.Emoji.CODE_GREEN_TICK
 import net.corda.core.utilities.Emoji.CODE_NO_ENTRY
 import net.corda.core.utilities.Emoji.CODE_RIGHT_ARROW
-import net.corda.core.utilities.Emoji.SKULL_AND_CROSSBONES
+import net.corda.core.utilities.Emoji.CODE_SKULL_AND_CROSSBONES
 import net.corda.core.utilities.ProgressTracker
 import net.corda.node.utilities.ANSIProgressRenderer.progressTracker
 import org.apache.logging.log4j.LogManager
@@ -46,7 +46,7 @@ object ANSIProgressRenderer {
             prevMessagePrinted = null
             prevLinesDrawn = 0
             draw(true)
-            subscription = value?.changes?.subscribe({ draw(true) }, { draw(true, it) })
+            subscription = value?.changes?.subscribe({ draw(true) }, { draw(true, it) }, { progressTracker = null; draw(true) })
         }
 
     private fun setup() {
@@ -106,11 +106,9 @@ object ANSIProgressRenderer {
     private var prevLinesDrawn = 0
 
     @Synchronized private fun draw(moveUp: Boolean, error: Throwable? = null) {
-        val pt = progressTracker!!
-
         if (!usingANSI) {
-            val currentMessage = pt.currentStepRecursive.label
-            if (currentMessage != prevMessagePrinted) {
+            val currentMessage = progressTracker?.currentStepRecursive?.label
+            if (currentMessage != null && currentMessage != prevMessagePrinted) {
                 println(currentMessage)
                 prevMessagePrinted = currentMessage
             }
@@ -125,10 +123,12 @@ object ANSIProgressRenderer {
         // Put a blank line between any logging and us.
         ansi.eraseLine()
         ansi.newline()
+        val pt = progressTracker ?: return
         var newLinesDrawn = 1 + pt.renderLevel(ansi, 0, error != null)
 
         if (error != null) {
-            ansi.a("$SKULL_AND_CROSSBONES   $error")
+            // TODO: This should be using emoji only on supported platforms.
+            ansi.a("$CODE_SKULL_AND_CROSSBONES   $error")
             ansi.eraseLine(Ansi.Erase.FORWARD)
             ansi.newline()
             newLinesDrawn++

@@ -10,6 +10,7 @@ import net.corda.core.node.NodeInfo
 import net.corda.core.node.PluginServiceHub
 import net.corda.core.node.services.ServiceType
 import net.corda.core.seconds
+import net.corda.core.serialization.CordaSerializable
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 import net.corda.core.utilities.trace
@@ -21,7 +22,7 @@ object FixingFlow {
 
     class Service(services: PluginServiceHub) {
         init {
-            services.registerFlowInitiator(Floater::class) { Fixer(it) }
+            services.registerFlowInitiator(Floater::class.java) { Fixer(it) }
         }
     }
 
@@ -121,6 +122,7 @@ object FixingFlow {
 
 
     /** Used to set up the session between [Floater] and [Fixer] */
+    @CordaSerializable
     data class FixingSession(val ref: StateRef, val oracleType: ServiceType)
 
     /**
